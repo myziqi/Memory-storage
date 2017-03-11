@@ -1,0 +1,37 @@
+create index in_id on t2(id); //创建索引 in_id索引名  
+
+
+insert into table values(1),(2),(3);多条记录插入
+
+insert into t2 select * from t2; 往T2里面插入T2数据
+
+存储
+\d //    
+create procedure p3()
+begin
+set @i=1;
+while @i<10000 do
+insert into t3 values(@i);
+set @i=@i+1;
+end while;
+end //
+
+call p3();  执行P3
+
+
+
+SELECT p.*,ps.investTime, ps.beginMoney, ps.investTime1, ps.investTime2,
+			ps.hopeRate1, ps.hopeRate2,ps.totalAmount,ps.returnType,ps.totalMoney,ps.oneaddMoney
+			FROM products_data.data_products AS p
+			
+			LEFT JOIN products_data.data_indexconfignew AS ic ON p.id = ic.product_id AND ic.status = 1 
+			LEFT JOIN products_data.data_productsitem AS ps ON p.id=ps.pdid
+					WHERE p.isshow=1 AND p.status =2 AND  p.exp_pType = 0 AND ic.tid = '10'
+					ORDER BY ic.status DESC,ic.ordernum ASC
+					LIMIT 3
+
+
+/usr/local/mysql/bin/mysqld_safe --user=mysql & 重启MYSQL
+
+
+Truncate table_name; 删除表
