@@ -1,0 +1,288 @@
+
+MYSQL 数据库优化
+
+/***************************************** 1、Mysql 基础操作 ******************************************************/
+
+(1.1) mysql 表复制
+				create database data_name; /*创建数据库*/
+	            create table table_name1 like table_name2; /*复制表结构*/
+				insert into table_name1 select * from table_name2; /*table_name1 复制 table_name2里面的内容*/
+				
+(1.2) mysql 索引
+				alter table table_name add index index_name(字段名); /*添加普通索引*/
+				alter table table_name add unique(字段名); /*添加唯一索引*/
+				alter table table_name add primary key(字段名); /*添加主键索引*/
+				================================================
+				alter table table_name drop index index_name; /*删除索引*/
+				alter table table_name drop primary key;/*删除主键索引 如果有自增需要删除自增才可以删除*/
+				================================================
+				Show index from table_name;查看索引的
+				Alter table table_name modify id int unsigned not null; 去掉自增
+				Alter table table_name modify id int unsigned not null auto_increment; 添加自增
+				
+(1.3) mysql 视图
+				? view
+				drop view view_name; /*删除视图*/
+				create view view_name as select * from table_name1 where id>5 and id<10; /*创建视图*/	
+				
+(1.4) mysql 内置函数
+  字符串函数>concat(string1,string2) //连接字符串   lcase(string) //转换成小写
+				ucase(string) //转换成大写             length(string) //string长度
+				ltrim(string) //去除前端空格           rtrim(string)  //去除后端空格
+				repeat(string,count) //重复count次     replace(str,search_str,replace_str) //在str中用replace_str 替换search_str
+				substring(str,0,10)                    space(count) //生成count个空格
+				=====================================================================
+    数学函数>bin(number) //十进制转二进制           ceiling(12.6) //向上取整
+				floor(12.6) //向下取整                 max(num1,num2)//取最大值
+				min(num1,num2)//取最小值               sqrt(number)//开平方
+				rand() //返回0-1 内的随机值  
+				======================================================================
+    日期函数>curdate();//返回当前日期  2016-10-01   curtime() //返回当前时间	10：20：55
+				now()//返回当前的日期时间 2016-10-01 10：20：55
+				unix_timestamp(date) //返回当前date的unix 时间戳
+				from_unixtime() //返回unix 时间戳的日期值
+				week(date) 返回date 为一年中的第几周
+				year(date) 返回日期date 的年份
+				datediff(expr,expr2) 返回起始时间expr和结束时间 expr2间天数
+				
+(1.5) mysql 预处理语句
+				设置 stmt1预处理，传递一个数据 作为一个where 判断条件
+				第一步：prepare stmt1 from 'select * from t1 where id>?';
+				第二步：set @i=1; //设置变量
+				第三步：execute stmt1 using @i; //执行stmt1
+				=========================================================
+				drop prepare stmt1; //删除预处理
+				
+(1.6) mysql 事务处理
+				set autocommit=0; //设置是否开启自动提交功能 0关闭1开启
+				delete from table_name where id=1;
+				savepoint p1;
+				.........中间是返回执行   然后执行下面
+				rollback to p1; //返回到p1 这个位置
+				rollback;// 返回到最开始
+				============
+				commit; 提交
+				
+(1.7) mysql 存储
+				\d  //  改变结束符
+				
+				(
+					create procedure p_name()
+					begin
+					set @i=0;
+					while @i<10 do
+					select @i; //这里是 执行程序
+					set @i=@i+1;
+					end while;
+					end;
+					//
+				)
+				call p_name(); 调用存储
+				show procedure status; (\G)  //查看存储
+				show create procedure p_name\G//查看创建存储信息
+				
+(1.8) mysql 触发器
+				(   创建一个名字为 tg_name 的触发器，当向 table_name中插入数据时就向table_name2中插入一条数据
+					create trigger tg_name before insert on table_name1 for each row
+					begin insert into table_name2(id) values(new.id);
+					end//
+				)
+				(   删除
+					create trigger tg_name before delete on table_name1 for each row
+					begin delete from table_name2 where id=old.id;
+					end//
+				)
+				(   更新
+					create trigger tg_name before update on table_name1 for each row
+					begin update t2 set name=new.name where id=old.id;
+					end//
+				)
+				show triggers; //查看触发器
+				
+(1.9) 重排 auto_increment 值
+				truncate table table_name; //清空表
+				alter table table_name auto_increment=1; //设置为1
+
+				
+				
+/***************************************** 2、常用的Sql技巧 ******************************************************/
+(2.1) 正则表达式的使用
+				select name,email from table_name where email regexp "@163[.,]com$";
+				
+(2.2) 巧用rand()提取随机行
+				select * from table_name order by rand() limit 3; //获取三条随机数(这种方法不太好如果数据量大的情况需要以下办法)
+				(php) 
+				$offset = mt_rand(0,数据表总数据-1);
+				select * from user limit '.$offset.',1';
+				
+(2.3) 利用group by 的with rollup 子句进行统计
+				select field1,field2,count(field2) from table_name group by field1,field2;
+				select field1,field2,count(field2) from table_name group by field1,field2 with rollup;
+				
+(2.4) 用bit group functions 做统计
+				select id,bit_or(kind) from table_name group by id
+				select id,bit_and(kind) from table_name group by id
+				
+(2.5) 使用外键需要注意的问题
+				INNODB支持外键 myisam不支持
+				create table table_name(id int,name char(20),foreignkey(id) references out table(id) on delete cascade on update cascade);
+				
+(2.6) mysql 中的 help 的使用
+				? create  //查看创建语法
+				? opti%   //如果忘记了可以用 %来模糊查询
+				? reg %
+				? contents 
+				
+
+				
+/***************************************** 3、Sql语句优化 ******************************************************/
+(3.1) 优化SQL 语句的一般步骤
+				show session status; //表示当前连接
+				show global status;  //表示自数据库启动至今
+				show status;
+				show status like 'com_%';
+				show global status like 'com_%';
+				
+				参数说明：com_xxx 表示每个XXX语句执行的次数如
+				com_select 执行select 操作的次数 一次查询累计加1
+				com_update 执行update 操作的次数
+				com_insert 执行insert 操作的次数，对批量插入只算一次
+				com_delete 执行delete 操作的次数
+				
+				InnoDB存储引擎
+				InnoDB_rows_read     执行select 操作的次数
+				InnoDB_rows_updated  执行update 操作的次数
+				InnoDB_rows_inserted 执行insert 操作的次数
+				InnoDB_rows_deleted  执行delete 操作的次数
+				
+				其它：
+				conections    连接mysql 的数量
+				uptime        服务器已经工作的秒数
+				slow_queries  慢查询的次数
+				
+				查看环境变量
+				show variables like '%slow%'; //查看慢查询信息
+				show variables like '%long%';
+				
+				定位执行效率较低的SQL语句
+				1、explain select * from table_name where id=1000;
+				2、desc select * from table_name where id=1000; //分析执行结果
+				
+(3.2) 索引问题
+				1、select * from table_name where name like 'name%'\G  //%分号尽量写到后面
+				2、如果对大的文本进行搜索，使用全文索引而不使用 like
+				3、如果列名是索引，使用 列名  is null 也会使用索引
+				4、如果mysql 估计使用索引比全表扫描更慢 则不使用索引
+				5、如果 name(字符类型) 列上有索引 但是 查询时 where name=123 数字型则也不使用索引
+				6、or and 条件查询时， 前后都需要 加索引(其中一个没索引则全表查询)
+				7、show status like 'handler_read%';
+
+(3.3) 两个简单使用的优化方法
+				1、analyze table table_name;  //定期分析
+				2、check table table_name;
+				3、optimize table table_name;// 如果已经删除了表的一大部分 或者对表包含可变长度行的改变，则需要定期优化
+				这条命令可以将表中的空间碎片进行合并
+(3.1) 常用SQL的优化
+				备份与灰复
+				/usr/local/mysql/bin/mysqldump -uroot -proot test >/tmp/test.sql 备份 
+				/usr/local/mysql/bin/mysql -uroot -proot test </tmp/test.sql     灰复
+				
+				使用打开或uduf myisam 表非唯一索引
+				alter table table_name disable kyes;
+				alter table table_name enable keys;
+				
+				数据插入
+				insert into table_name(field) values('val1'),('val2'); //这种方式比一条一条插入要好（不会老是连接、与关闭）
+				
+				优化group by 语句
+				使用group by 过程中语法会默认 排序 (order by null 禁止排序)
+				
+				wget left join 查询会使用索引
+				
+				
+				
+/***************************************** 4、Mysql 数据库优化 ******************************************************/
+(4.1) 优化表的类型
+(4.2) 通过拆分提高表的访问效率
+				1、分库分表
+				2、分区
+				
+				主要目地：
+				1、减少表的记录数
+				2、减小对操作系统的负担压力
+				
+(4.3) 使用中间表提高统计查询速度
+				中间表的产生
+				1、view 视图
+				2、重新生成一个新表
+			
+
+
+			
+/***************************************** 5、Myisam表锁 ******************************************************/
+(5.1) myisam 读锁定
+				1、lock table table_name read;//开启后 不能 insert update delete
+				2、mysqldump -uroot -proot test >test.sql //备份大量数据
+				
+(5.2) myisam 写锁定
+				1、lock table table_name write;// 打开另一个终端 select insert update delete  table_name 都不能操作只有第一个终端执行完成才能执行
+				
+				unlock table table_name; //解锁
+				unlock tables; //解锁全部
+/***************************************** 6、Mysql服务器优化 ******************************************************/
+
+(6.1) 四种字符集问题
+				server characterset: utf8 服务字符集
+				db     characterset: utf8 数据库字符集
+				client characterset: utf8 客户端字符集
+				conn   characterset: utf8 连接字符集
+				
+(6.2) binary log 日志问题
+				log-bin=mysql-bin
+				show binary logs;
+				
+(6.3) slow log 慢查询日志问题
+				vi /etc/my.cnf  //开启和设置慢查询时间
+			    [mysqld]--log_slow_queries=slow.log
+				[mysqld]--long_query_time =5;
+				show global status like '%quer%';慢查询日志
+(6.4) socket问题
+(6.5) root 密码丢失
+				1、service mysql stop //停止mysql 服务
+				2、mysqld_safe --skip-grant-tables --user=mysql & //开户服务与跳过授权表 mysql.usr 和mysql.db 这些表 
+				3、mysql -uroot //登录
+				4、set password=password("123456"); //设置密码如果不行就执行下面语句
+				5、update user set password=password('123456') where user='user' and host='localhost';
+				
+				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
