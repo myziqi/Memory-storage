@@ -1,0 +1,105 @@
+<!------------------------Nginx笔记------------------------------->
+
+一、Nginx 理论-1
+1、高并发连接：
+   官方测试Nginx能够支撑 5W并发连接，实际测试可以达到3万左右，按照这样计算，每天可以处理亿次访问量，采用最新EPOLL(Linux2.6内核)和KQUEUE(FREEBSD)网络I/O模型，而Apache则使用的是传统的select 模型
+
+2、内存消耗小
+   Nginx+PHP(fastCGI)服务器在3万并发连接下，开启10个Nginx进程消耗150M内存(15M*10),开启64个PHP-cgi进程消耗 128MB内存（20MB*64），使用webbench做压力测试，在3万并发量下速度依然很快
+
+3、Nginx支持负载均衡
+
+4、Nginx支持反向代理
+
+5、成本低廉
+   相对于F5 BIG-IP、NetScaler 等硬件负载均衡交换机动辄10多成甚至几十万，可以免费使用，并且可以用于商业用途
+
+
+
+
+<!------------------------Nginx编译和安装------------------------------->
+
+安装Nginx 必须先安装 相应的编译工具
+#yum -y install gcc gcc-c++ autoconf automake
+#yum -y install zlib zlib-devel openssl openssl-devel pcre-devel
+
+zlib：Nginx提供gzip模块，需要zlib 库支持
+openssl:Nginx 提供 SSL功能
+pcre:支持地扯重写 rewrite 功能
+
+nginx 编译和安装
+#tar -zxvf nginx-1.2.4.tar.gz
+#cd nginx-1.2.4
+#./configure 
+--prefix=/usr
+--sbin-path=/usr/sbin/nginx
+--conf-path=/etc/nginx/nginx.conf
+--error-log-path=/var/log/nginx/error.log
+--pid-path=/var/run/nginx/nginx.pid
+--lock-path=/var/lock/nginx.lock
+--user=nginx
+--group=nginx
+--with-http_ssl_module
+--with-http_flv_module
+--with-http_gzip_static_module
+--http-log-path=/var/log/nginx/access.log
+--http-client-body-temp-path=/var/tmp/nginx/client
+--http-proxy-temp-path=/var/tmp/nginx/fcgi
+--with-http_stub_status_module
+
+#make &&　make install
+
+
+
+
+
+<!------------------------Nginx匹配规则------------------------------->
+location 
+语法：location [=|~|~*|^~]/uri/{...}
+默认值：no
+使用字段：server
+这个参数根据URI的不同需求来进行配置，可以使用字符串与正则表达式匹配，如果要使用正则表达式，你必须指定下列前缀
+
+~： 区分大小写
+~*: 不区分大小写
+^~：禁止表达式匹配
+=： 精确匹配
+
+location =/{
+	#只匹配 / 的查询
+	{configuration A}
+}
+
+location /{
+	#匹配任何以 / 开始的查询，但是正则表达式与一些较长的字符串将被首先匹配
+	{configuration B}
+}
+
+location ^~/images/{
+	#匹配任何以 /images/开始的查询并且停止搜索，不检查正则表达式
+	{configuration C}
+}
+
+location ~*\.(gif|jpg|jpeg)${
+	#匹配任何以gif,jpg, or jpeg结尾的文件，但是所有 /images/目录的请求将在configuration C 中处理
+	{configuration D}
+}
+
+
+自定义错误页面
+error_page 500 502 503 504 /50x.html;
+location =/50.html{
+	root html;
+}
+
+error_page 403 404 /40x.html;
+location =/40x.html{
+	root /web/html;  #指定错误路径
+}
+
+
+
+
+
+
+

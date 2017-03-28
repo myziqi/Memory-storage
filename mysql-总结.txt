@@ -261,8 +261,11 @@ MYSQL 数据库优化
 
 
 
+===================================================【SQL记录】===============================================================
 
-
+UNIX时间戳转换为日期用函数： FROM_UNIXTIME()=> select FROM_UNIXTIME(1156219870);
+日期转换为UNIX时间戳用函数： UNIX_TIMESTAMP() => Select UNIX_TIMESTAMP(’2006-11-04 12:23:00′);
+1、SELECT deposittime  FROM `odta_xs_deposit` where UNIX_TIMESTAMP(deposittime)>1489392995;
 
 
 
