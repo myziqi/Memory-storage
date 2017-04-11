@@ -36,3 +36,12 @@ function upFile(){
 		}
 	});
 }
+
+
+$('.tagbox').before('<div>在class tagbox元素前面插入</div>');
+
+//获取父元素
+$(obj).parent();  
+
+//获取元素下的所有 input 子元素
+$(obj).find('input');
