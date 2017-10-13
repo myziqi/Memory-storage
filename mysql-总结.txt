@@ -169,7 +169,7 @@ MYSQL 数据库优化
 				2、desc select * from table_name where id=1000; //分析执行结果
 				
 (3.2) 索引问题
-				1、select * from table_name where name like 'name%'\G  //%分号尽量写到后面
+				1、select * from table_name where name like 'name%'\G  // %分号尽量写到后面
 				2、如果对大的文本进行搜索，使用全文索引而不使用 like
 				3、如果列名是索引，使用 列名  is null 也会使用索引
 				4、如果mysql 估计使用索引比全表扫描更慢 则不使用索引
@@ -255,9 +255,10 @@ MYSQL 数据库优化
 				5、update user set password=password('123456') where user='user' and host='localhost';
 				
 				
-
-
-
+删除库下面所有的表
+SELECT CONCAT('DROP TABLE IF EXISTS ', table_name, ';')
+FROM information_schema.tables
+WHERE table_schema = 'lmlphp';
 
 
 
